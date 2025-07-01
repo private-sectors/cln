@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Patient Drug Chart (Complete)</title>
+<style>
+body {
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+background-color: #f8f9fa;
+color: #333;
+margin: 0;
+padding: 20px;
+}
+h1 {
+text-align: center;
+color: #0056b3;
+}
+.controls {
+display: flex;
+gap: 15px;
+align-items: center;
+justify-content: center;
+margin-bottom: 25px;
+padding: 15px;
+background-color: #e9ecef;
+border-radius: 8px;
+flex-wrap: wrap;
+}
+.control-group {
+display: flex;
+flex-direction: column;
+}
+.control-group label {
+font-size: 0.9em;
+margin-bottom: 5px;
+font-weight: bold;
+color: #495057;
+}
+select, button {
+padding: 10px;
+border-radius: 5px;
+border: 1px solid #ced4da;
+font-size: 16px;
+}
+button {
+background-color: #007bff;
+color: white;
+cursor: pointer;
+border-color: #007bff;
+transition: background-color 0.2s;
+align-self: flex-end;
+/* Align button with the bottom of the select inputs */
+}
+button:hover {
+background-color: #0056b3;
+}
+table {
+width: 100%;
+border-collapse: collapse;
+margin-top: 20px;
+box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+background-color: white;
+}
+th, td {
+border: 1px solid #dee2e6;
+padding: 12px;
+text-align: left;
+white-space: nowrap; /* Prevents long names from wrapping */
+}
+th {
+background-color: #f2f2f2;
+font-weight: 600;
+position: sticky;
+top: 0;
+}
+td input[type="number"] {
+width: 100px;
+padding: 8px;
+border: 1px solid #ccc;
+border-radius: 4px;
+box-sizing: border-box;
+}
+/* For better UX, remove number input spinners */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+-webkit-appearance: none;
+margin: 0;
+}
+input[type=number] {
+-moz-appearance: textfield;
+}
+.table-container {
+width: 100%;
+overflow-x: auto; /* Allows horizontal scrolling */
+}
+.checkbox-container {
+display: flex;
+justify-content: center;
+margin-top: 20px;
+align-items: center;
+gap: 10px;
+}
+</style>
+</head>
+<body>
+
+<h1>Patient Drug Chart</h1>
+
+<div class="controls">
+<div class="control-group">
+<label for="drugCategory">1. Select Drug Category</label>
+<select id="drugCategory">
+<option value="">-- Choose Category --</option>
+</select>
+</div>
+<div class="control-group">
+<label for="drugName">2. Select Drug Name</label>
+<select id="drugName">
+<option value="">-- Choose Drug--</option>
+</select>
+</div>
+<button id="addColumnBtn">Add Drug Column</button>
+</div>
+
+<div class="checkbox-container">
+<input type="checkbox" id="autoSelectMD" checked>
+<label for="autoSelectMD">Auto-select M.D. for NS100</label>
+</div>
+
+<div class="table-container">
+<table id="patientTable">
+<thead>
+<tr>
+<th>ID</th>
+<th>Patient Name</th>
+<th>Patient Number</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>John Doe</td>
+<td>P-12345</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Jane Smith</td>
+<td>P-67890</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Ali Ahmed</td>
+<td>P-24581</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const drugData = {
+        "Anti cancer": [
+            "Bendamustin 100mg", "Belomycin 15mg", "Haloxan 2g", "ADM 50mg (doxorubicin)", "Idorubicin vial",
+            "4mg/5ml", "Carboplatin 450mg/45ml", "Hemcate 100mg", "Gemzar 1000mg", "Endoxan 500mg", "vincrestin 1 mg",
+            "DTLC 200mg", "Methotrexate 5 g vial", "Zomita", "decitabin 50 mg", "Asparginase 10000", "Mesna 400mg",
+            "Arsenic 10mg/10ml", "leucovorin calcium", "ATG 250mg", "VPA 400IU", "brentuximab vedotin 50 mg",
+            "Etopside 10 mg", "Velcade 0.5 mg", "Fludarabin 50mg", "carboplutin 10 mg", "cytrabin 1000 mg", "Omeprazol 40mg"
+        ],
+        "Ampoules": [
+            "Lidocain amp 2%", "Mixtard Insulin 100IU/ML", "Lent Insislin 100IU/ML", "Soluble Inisulin 100IU/ML",
+            "Amp 200mg/5ml", "Dexamethason 8mg", "KCL vial", "paracetamol vial 1g", "Buscopan Amp 20mg/ml",
+            "Plasil Amp 10mg/ml", "immunoglubine", "Voltarine Amp 75mg/3ml", "Ca Amp 10%", "40mg", "Pthedine amp",
+            "Adenosin amp 6mg/2ml", "Acytase vial 50mg", "labetalol vial", "Dopamine", "Heparin v 25000/5ml",
+            "metoclopramol amp 5mg", "Furosimide Amp 20mg/ml", "Atropin Amp 600mg", "Tramadol Amp 100mg/2ml",
+            "Diazpan Amp 10mg/2ml", "vit k amp", "Omeprazol vial 40mg", "Nexum vial", "Enoxaparin vial 6000 IU",
+            "B6 amp", "Largactil amp", "adrinalin amp", "cordarone amp", "nordinatrin amp",
+            "Phenytoin amp 250mg/5ml", "deferoxamine mesylate", "Cycloprion amp", "Venofer v 100mg/5ml",
+            "Lumina amp 200mg/ml", "Methylprednisolon vial 500mg", "MG 50%", "Labetol vial 100mg/20ml",
+            "Flumix amp 250mg/20ml", "dobutamine amp 250mg/20ml", "zofran amp", "Albumin vial"
+        ],
+        "Tablets": [
+            "Carvidlol tab 6.25mg", "Ibuprofin tab 200mg", "Doptain tab 135mg", "Allopurinol tab 100mg",
+            "Prednisolon tab 5mg", "Inderal tab 40mg", "Glibenclamide tab 5mg", "Metformin tab 50mg",
+            "Lisinopril tab 10mg", "Histadyt tab 5mg", "Laxytab tab 4 mg", "Aspirin tab 100mg", "Buscopan tab 10mg",
+            "Folic acid 5mg", "Montelukast tab 10mg", "Mobik tab 25mg", "Plasil tab 10mg", "tab 75mg", "Capotin 16 mg",
+            "Angide tab", "stugeron tab 25 mg", "Thyroxin tab 100 mg", "one alfa 1mcg", "atacand", "avas 40 mg tab",
+            "no vomit tab", "Crestor 10mg", "Carbimazol tab 5mg", "Tamslosin tab 0.4mg",
+            "hydrochlorothiazide tab 50 mg", "Paracetamol tab 500mg", "aldactone 25 mg", "Gabapentin cap 300mg",
+            "Diazepam tab 5mg", "Dapagliflozin tab 10mg", "Losartan tab 50mg", "Empagliflozin tab 10mg",
+            "20mg", "Ferrous sulphate 200mg", "Montelukast tab 4mg", "calcium tab", "Pregabalin 75mg",
+            "Omeprazole cap", "Hydroxychloroquine tab 200mg", "vit A 10000 IU tab"
+        ],
+        "Antibiotics": [
+            "Amoxil v 500mg", "Meropenem V 1g", "Ganamycin Amp 80mg/2ml", "Metronidazole V 500mg/100ml",
+            "Vancomycin V 1g", "Ceftriaxone V 1g", "Ciprodar V 200mg/100ml", "Amphotericin B vial",
+            "Amoxi cap 500mg", "Metronidazole tab 500mg", "ribavirine cap", "ribavitin amp", "Augmentin cap 625mg",
+            "acyclovir vial 250 mg", "acyclovir 200 mg tab", "acyclovir 200 mg susp", "tigecycline 50 mg vial",
+            "trimethiprim tab"
+        ],
+        "Med Tools": [
+            "Folly 14", "Folly 16", "Folly 18", "Syringe 1ml", "Syringe 3ml", "Syringe 5ml", "Syringe 10ml",
+            "Syringe 20ml", "Syringe 50ml", "Canulla 20", "Canulla 22", "Canulla 24", "I.V. BLOOD", "Fluid IV set",
+            "NG 14", "NG 16", "NG 18", "NS 500ml", "GS 500ml", "GW 500ml", "ringer", "ringer lactate",
+            "Mannitol 20%", "Urine bag", "Section G10", "Lactulose syr", "Allermin syr", "solvodin syr",
+            "Ventolin sol 5mg/ml", "Hamamelis cream", "lidoacin gel", "fucidin cream", "H.C cream",
+            "zinc cream", "clotrimazol cream", "ORS Sachet", "M.D" // Added M.D.
+        ]
+    };
+
+    const categorySelect = document.getElementById('drugCategory');
+    const drugNameSelect = document.getElementById('drugName');
+    const addColumnBtn = document.getElementById('addColumnBtn');
+    const patientTable = document.getElementById('patientTable');
+    const tableHeader = patientTable.querySelector('thead tr');
+    const tableBody = patientTable.querySelector('tbody');
+    const autoSelectMDCheckbox = document.getElementById('autoSelectMD');
+
+    [span_0](start_span)// Populate the Category Dropdown[span_0](end_span)
+    for (const category in drugData) {
+        [span_1](start_span)const option = document.createElement('option');[span_1](end_span)
+        [span_2](start_span)option.value = category;[span_2](end_span)
+        [span_3](start_span)option.textContent = category;[span_3](end_span)
+        [span_4](start_span)categorySelect.appendChild(option);[span_4](end_span)
+    }
+
+    [span_5](start_span)// Update Drug Name Dropdown based on Category[span_5](end_span)
+    categorySelect.addEventListener('change', () => {
+        [span_6](start_span)drugNameSelect.innerHTML = '<option value="">-- Choose Drug --</option>';[span_6](end_span)
+        [span_7](start_span)const selectedCategory = categorySelect.value;[span_7](end_span)
+
+        [span_8](start_span)if (selectedCategory && drugData[selectedCategory]) {[span_8](end_span)
+            [span_9](start_span)drugData[selectedCategory].forEach(drug => {[span_9](end_span)
+                [span_10](start_span)const option = document.createElement('option');[span_10](end_span)
+                [span_11](start_span)option.value = drug;[span_11](end_span)
+                [span_12](start_span)option.textContent = drug;[span_12](end_span)
+                [span_13](start_span)drugNameSelect.appendChild(option);[span_13](end_span)
+            });
+        }
+    });
+
+    // Function to add a new column for a specific drug/tool
+    function addDrugColumn(drugName, initialQuantity = '') {
+        // Check if the column already exists to prevent duplicates
+        const existingHeaders = Array.from(tableHeader.querySelectorAll('th')).map(th => th.textContent);
+        if (existingHeaders.includes(drugName)) {
+            return; // Column already exists, do not add again
+        }
+
+        [span_14](start_span)const newHeader = document.createElement('th');[span_14](end_span)
+        [span_15](start_span)newHeader.textContent = drugName;[span_15](end_span)
+        [span_16](start_span)tableHeader.appendChild(newHeader);[span_16](end_span)
+
+        [span_17](start_span)const rows = tableBody.querySelectorAll('tr');[span_17](end_span)
+        [span_18](start_span)rows.forEach(row => {[span_18](end_span)
+            [span_19](start_span)const newCell = document.createElement('td');[span_19](end_span)
+            [span_20](start_span)const input = document.createElement('input');[span_20](end_span)
+            [span_21](start_span)input.type = 'number';[span_21](end_span)
+            [span_22](start_span)input.min = '0';[span_22](end_span)
+            [span_23](start_span)input.placeholder = 'Qty';[span_23](end_span)
+            if (initialQuantity !== '') {
+                input.value = initialQuantity;
+            }
+            [span_24](start_span)newCell.appendChild(input);[span_24](end_span)
+            [span_25](start_span)row.appendChild(newCell);[span_25](end_span)
+        });
+    }
+
+    [span_26](start_span)// Add the New Drug Column on Button Click[span_26](end_span)
+    addColumnBtn.addEventListener('click', () => {
+        [span_27](start_span)const selectedDrug = drugNameSelect.value;[span_27](end_span)
+        const selectedCategory = categorySelect.value;
+
+        [span_28](start_span)if (!selectedDrug) {[span_28](end_span)
+            [span_29](start_span)alert("Please select a drug first.");[span_29](end_span)
+            [span_30](start_span)return;[span_30](end_span)
+        }
+
+        addDrugColumn(selectedDrug);
+
+        // Auto-select 5ml syringe for Ampoules or first 9 Antibiotics
+        if (selectedCategory === "Ampoules" || (selectedCategory === "Antibiotics" && drugData["Antibiotics"].slice(0, 9).includes(selectedDrug))) {
+            addDrugColumn("Syringe 5ml");
+        }
+
+        // Auto-select Canulla and Fluid IV set for specific fluids
+        const fluidDrugs = ["Mannitol 20%", "ringer", "ringer lactate", "GW 500ml", "GS 500ml", "NS 500ml"];
+        if (fluidDrugs.includes(selectedDrug)) {
+            // Logic for "only one canulla regarding the patient and fluid IV set"
+            // This assumes we only add one canulla column if any of these fluids are added.
+            // If you need more complex logic (e.g., specific canulla size based on patient),
+            // you'd need more patient data. For now, it adds a default canulla.
+            addDrugColumn("Canulla 20"); // Default canulla
+            addDrugColumn("Fluid IV set");
+        }
+
+        // Auto-select M.D. if patient has NS100 and checkbox is active
+        if (selectedDrug === "NS 500ml" && autoSelectMDCheckbox.checked) {
+            addDrugColumn("M.D");
+        }
+
+        [span_31](start_span)// Reset dropdowns for next entry[span_31](end_span)
+        [span_32](start_span)categorySelect.value = "";[span_32](end_span)
+        [span_33](start_span)drugNameSelect.innerHTML = '<option value="">-- Choose Drug --</option>';[span_33](end_span)
+    });
+});
+</script>
+
+</body>
+</html>
