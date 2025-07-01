@@ -50,7 +50,6 @@ cursor: pointer;
 border-color: #007bff;
 transition: background-color 0.2s;
 align-self: flex-end;
-/* Align button with the bottom of the select inputs */
 }
 button:hover {
 background-color: #0056b3;
@@ -66,7 +65,7 @@ th, td {
 border: 1px solid #dee2e6;
 padding: 12px;
 text-align: left;
-white-space: nowrap; /* Prevents long names from wrapping */
+white-space: nowrap;
 }
 th {
 background-color: #f2f2f2;
@@ -81,7 +80,6 @@ border: 1px solid #ccc;
 border-radius: 4px;
 box-sizing: border-box;
 }
-/* For better UX, remove number input spinners */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
 -webkit-appearance: none;
@@ -92,7 +90,7 @@ input[type=number] {
 }
 .table-container {
 width: 100%;
-overflow-x: auto; /* Allows horizontal scrolling */
+overflow-x: auto;
 }
 .checkbox-container {
 display: flex;
@@ -125,7 +123,7 @@ gap: 10px;
 
 <div class="checkbox-container">
 <input type="checkbox" id="autoSelectMD" checked>
-<label for="autoSelectMD">Auto-select M.D. for NS100</label>
+<label for="autoSelectMD">Auto-select M.D. for NS 500ml</label>
 </div>
 
 <div class="table-container">
@@ -204,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             "NG 14", "NG 16", "NG 18", "NS 500ml", "GS 500ml", "GW 500ml", "ringer", "ringer lactate",
             "Mannitol 20%", "Urine bag", "Section G10", "Lactulose syr", "Allermin syr", "solvodin syr",
             "Ventolin sol 5mg/ml", "Hamamelis cream", "lidoacin gel", "fucidin cream", "H.C cream",
-            "zinc cream", "clotrimazol cream", "ORS Sachet", "M.D" // Added M.D.
+            "zinc cream", "clotrimazol cream", "ORS Sachet", "M.D"
         ]
     };
 
@@ -216,92 +214,136 @@ document.addEventListener('DOMContentLoaded', () => {
     const tableBody = patientTable.querySelector('tbody');
     const autoSelectMDCheckbox = document.getElementById('autoSelectMD');
 
-    [span_0](start_span)// Populate the Category Dropdown[span_0](end_span)
+    [span_0](start_span)// Step 1: Populate the Category Dropdown[span_0](end_span)
     for (const category in drugData) {
-        [span_1](start_span)const option = document.createElement('option');[span_1](end_span)
-        [span_2](start_span)option.value = category;[span_2](end_span)
-        [span_3](start_span)option.textContent = category;[span_3](end_span)
-        [span_4](start_span)categorySelect.appendChild(option);[span_4](end_span)
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categorySelect.appendChild(option);
     }
 
-    [span_5](start_span)// Update Drug Name Dropdown based on Category[span_5](end_span)
+    [span_1](start_span)// Step 2: Update Drug Name Dropdown based on Category[span_1](end_span)
     categorySelect.addEventListener('change', () => {
-        [span_6](start_span)drugNameSelect.innerHTML = '<option value="">-- Choose Drug --</option>';[span_6](end_span)
-        [span_7](start_span)const selectedCategory = categorySelect.value;[span_7](end_span)
+        [span_2](start_span)drugNameSelect.innerHTML = '<option value="">-- Choose Drug --</option>'; // Clear previous options[span_2](end_span)
+        const selectedCategory = categorySelect.value; [span_3](start_span)// Get selected category[span_3](end_span)
 
-        [span_8](start_span)if (selectedCategory && drugData[selectedCategory]) {[span_8](end_span)
-            [span_9](start_span)drugData[selectedCategory].forEach(drug => {[span_9](end_span)
-                [span_10](start_span)const option = document.createElement('option');[span_10](end_span)
-                [span_11](start_span)option.value = drug;[span_11](end_span)
-                [span_12](start_span)option.textContent = drug;[span_12](end_span)
-                [span_13](start_span)drugNameSelect.appendChild(option);[span_13](end_span)
+        [span_4](start_span)if (selectedCategory && drugData[selectedCategory]) { // Check if category exists and has data[span_4](end_span)
+            [span_5](start_span)drugData[selectedCategory].forEach(drug => { // Iterate over drugs in category[span_5](end_span)
+                const option = document.createElement('option'); [span_6](start_span)// Create new option element[span_6](end_span)
+                option.value = drug; [span_7](start_span)// Set option value[span_7](end_span)
+                option.textContent = drug; [span_8](start_span)// Set option text[span_8](end_span)
+                drugNameSelect.appendChild(option); [span_9](start_span)// Add option to dropdown[span_9](end_span)
             });
         }
     });
 
-    // Function to add a new column for a specific drug/tool
+    // Function to add a new column for a specific drug/tool with an optional initial quantity
     function addDrugColumn(drugName, initialQuantity = '') {
         // Check if the column already exists to prevent duplicates
         const existingHeaders = Array.from(tableHeader.querySelectorAll('th')).map(th => th.textContent);
         if (existingHeaders.includes(drugName)) {
-            return; // Column already exists, do not add again
+            // Update the quantity if the column already exists
+            const headerIndex = existingHeaders.indexOf(drugName);
+            tableBody.querySelectorAll('tr').forEach(row => {
+                const input = row.children[headerIndex].querySelector('input[type="number"]');
+                if (input && initialQuantity !== '') {
+                    input.value = initialQuantity;
+                }
+            });
+            return; // Column already exists, do not add new column
         }
 
-        [span_14](start_span)const newHeader = document.createElement('th');[span_14](end_span)
-        [span_15](start_span)newHeader.textContent = drugName;[span_15](end_span)
-        [span_16](start_span)tableHeader.appendChild(newHeader);[span_16](end_span)
+        const newHeader = document.createElement('th');
+        newHeader.textContent = drugName;
+        tableHeader.appendChild(newHeader);
 
-        [span_17](start_span)const rows = tableBody.querySelectorAll('tr');[span_17](end_span)
-        [span_18](start_span)rows.forEach(row => {[span_18](end_span)
-            [span_19](start_span)const newCell = document.createElement('td');[span_19](end_span)
-            [span_20](start_span)const input = document.createElement('input');[span_20](end_span)
-            [span_21](start_span)input.type = 'number';[span_21](end_span)
-            [span_22](start_span)input.min = '0';[span_22](end_span)
-            [span_23](start_span)input.placeholder = 'Qty';[span_23](end_span)
+        const rows = tableBody.querySelectorAll('tr');
+        rows.forEach(row => {
+            const newCell = document.createElement('td');
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '0';
+            input.placeholder = 'Qty';
             if (initialQuantity !== '') {
                 input.value = initialQuantity;
             }
-            [span_24](start_span)newCell.appendChild(input);[span_24](end_span)
-            [span_25](start_span)row.appendChild(newCell);[span_25](end_span)
+            newCell.appendChild(input);
+            row.appendChild(newCell);
         });
     }
 
-    [span_26](start_span)// Add the New Drug Column on Button Click[span_26](end_span)
+    [span_10](start_span)// Step 3: Add the New Drug Column on Button Click[span_10](end_span)
     addColumnBtn.addEventListener('click', () => {
-        [span_27](start_span)const selectedDrug = drugNameSelect.value;[span_27](end_span)
+        const selectedDrug = drugNameSelect.value;
         const selectedCategory = categorySelect.value;
 
-        [span_28](start_span)if (!selectedDrug) {[span_28](end_span)
-            [span_29](start_span)alert("Please select a drug first.");[span_29](end_span)
-            [span_30](start_span)return;[span_30](end_span)
+        if (!selectedDrug) {
+            [span_11](start_span)alert("Please select a drug first."); // Alert if no drug is selected[span_11](end_span)
+            return; [span_12](start_span)// Exit function[span_12](end_span)
         }
 
+        // Add the initially selected drug column
         addDrugColumn(selectedDrug);
 
-        // Auto-select 5ml syringe for Ampoules or first 9 Antibiotics
-        if (selectedCategory === "Ampoules" || (selectedCategory === "Antibiotics" && drugData["Antibiotics"].slice(0, 9).includes(selectedDrug))) {
-            addDrugColumn("Syringe 5ml");
+        // Auto-selection logic for Syringe 5ml for Ampoules or first 9 Antibiotics
+        const firstNineAntibiotics = drugData["Antibiotics"].slice(0, 9);
+        if (selectedCategory === "Ampoules" || (selectedCategory === "Antibiotics" && firstNineAntibiotics.includes(selectedDrug))) {
+            const syringe5mlColumnIndex = Array.from(tableHeader.querySelectorAll('th')).map(th => th.textContent).indexOf("Syringe 5ml");
+
+            tableBody.querySelectorAll('tr').forEach((row, rowIndex) => {
+                const selectedDrugInput = row.querySelector(`td:nth-child(${Array.from(tableHeader.children).findIndex(th => th.textContent === selectedDrug) + 1}) input`);
+                if (selectedDrugInput && selectedDrugInput.value) {
+                    const quantity = selectedDrugInput.value;
+                    // If Syringe 5ml column already exists, update its value
+                    if (syringe5mlColumnIndex !== -1) {
+                        const syringeInput = row.children[syringe5mlColumnIndex].querySelector('input');
+                        if (syringeInput) {
+                            syringeInput.value = quantity;
+                        }
+                    } else { // Otherwise, add the column and set its value
+                        addDrugColumn("Syringe 5ml", quantity);
+                    }
+                }
+            });
         }
 
-        // Auto-select Canulla and Fluid IV set for specific fluids
+        // Auto-selection logic for Mannitol 20%, Ringer, Ringer Lactate, GW 500ml, GS 500ml, NS 500ml
         const fluidDrugs = ["Mannitol 20%", "ringer", "ringer lactate", "GW 500ml", "GS 500ml", "NS 500ml"];
         if (fluidDrugs.includes(selectedDrug)) {
-            // Logic for "only one canulla regarding the patient and fluid IV set"
-            // This assumes we only add one canulla column if any of these fluids are added.
-            // If you need more complex logic (e.g., specific canulla size based on patient),
-            // you'd need more patient data. For now, it adds a default canulla.
-            addDrugColumn("Canulla 20"); // Default canulla
-            addDrugColumn("Fluid IV set");
+            // Add Canulla (e.g., Canulla 20)
+            const canullaColumnIndex = Array.from(tableHeader.querySelectorAll('th')).map(th => th.textContent).filter(header => header.startsWith("Canulla")).length > 0;
+            if (!canullaColumnIndex) {
+                 addDrugColumn("Canulla 20", '1'); // Add only one Canulla if not present, set quantity to 1
+            }
+
+            // Add Fluid IV set
+            const fluidIvSetColumnIndex = Array.from(tableHeader.querySelectorAll('th')).map(th => th.textContent).indexOf("Fluid IV set");
+
+            tableBody.querySelectorAll('tr').forEach((row, rowIndex) => {
+                const selectedDrugInput = row.querySelector(`td:nth-child(${Array.from(tableHeader.children).findIndex(th => th.textContent === selectedDrug) + 1}) input`);
+                if (selectedDrugInput && selectedDrugInput.value) {
+                    const quantity = selectedDrugInput.value;
+                    const existingFluidIvSetInput = row.children[fluidIvSetColumnIndex]?.querySelector('input');
+
+                    if (existingFluidIvSetInput) {
+                        // Max 4 for Fluid IV set
+                        existingFluidIvSetInput.value = Math.min(parseInt(quantity, 10), 4);
+                    } else {
+                        addDrugColumn("Fluid IV set", Math.min(parseInt(quantity, 10), 4));
+                    }
+                }
+            });
         }
 
-        // Auto-select M.D. if patient has NS100 and checkbox is active
+
+        // Auto-selection for M.D. if NS 500ml is selected and checkbox is active
         if (selectedDrug === "NS 500ml" && autoSelectMDCheckbox.checked) {
-            addDrugColumn("M.D");
+             addDrugColumn("M.D", '1'); // Add M.D. column with quantity 1
         }
 
-        [span_31](start_span)// Reset dropdowns for next entry[span_31](end_span)
-        [span_32](start_span)categorySelect.value = "";[span_32](end_span)
-        [span_33](start_span)drugNameSelect.innerHTML = '<option value="">-- Choose Drug --</option>';[span_33](end_span)
+        [span_13](start_span)// Reset dropdowns for next entry[span_13](end_span)
+        categorySelect.value = ""; [span_14](start_span)// Clear category selection[span_14](end_span)
+        drugNameSelect.innerHTML = '<option value="">-- Choose Drug --</option>'; [span_15](start_span)// Reset drug name dropdown[span_15](end_span)
     });
 });
 </script>
